@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RootReveal — 极致纯净的 ROOT 环境检测工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --surface-glass: rgba(255, 255, 255, 0.55);
+            --border-glass: rgba(255, 255, 255, 0.6);
+            --text-primary: #0a0c10;
+            --text-secondary: #334155;
+            --text-muted: #5b6e8c;
+            --accent: #0066ff;
+            --accent-soft: rgba(0, 102, 255, 0.12);
+            --card-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
+            --blur-amount: 12px;
+            --transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+
+        body.dark {
+            --bg-primary: #05070c;
+            --bg-secondary: #0f1219;
+            --surface-glass: rgba(18, 25, 45, 0.65);
+            --border-glass: rgba(72, 120, 200, 0.2);
+            --text-primary: #edf2ff;
+            --text-secondary: #b9c7e0;
+            --text-muted: #7b8bb0;
+            --accent: #3b82f6;
+            --accent-soft: rgba(59, 130, 246, 0.18);
+            --card-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(72, 120, 200, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            transition: background 0.25s ease, color 0.2s ease;
+            overflow-x: hidden;
+        }
+
+        .glass-orb {
+            position: fixed;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, var(--accent) 0%, rgba(0,0,0,0) 70%);
+            opacity: 0.08;
+            filter: blur(80px);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 0.3s;
+        }
+        body.dark .glass-orb { opacity: 0.12; }
+        .orb-1 { top: -20vh; right: -10vw; }
+        .orb-2 { bottom: -30vh; left: -10vw; background: radial-gradient(circle, #7c5eff 0%, rgba(0,0,0,0) 70%); }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem 2rem 4rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent) 80%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .theme-toggle {
+            background: var(--surface-glass);
+            backdrop-filter: blur(var(--blur-amount));
+            border: 1px solid var(--border-glass);
+            border-radius: 60px;
+            padding: 0.5rem 1rem;
+            display: flex;
+            gap: 0.6rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        .theme-toggle:hover {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 0.9fr;
+            gap: 3rem;
+            margin-bottom: 4rem;
+            align-items: center;
+        }
+        .hero-left h1 {
+            font-size: 3.6rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, var(--text-primary), var(--accent));
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .hero-tag {
+            display: inline-block;
+            background: var(--accent-soft);
+            backdrop-filter: blur(4px);
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+        }
+        .hero-desc {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin: 1.2rem 0 1.8rem;
+            max-width: 90%;
+        }
+        .stats-badge {
+            display: flex;
+            gap: 1.2rem;
+            margin-top: 1rem;
+        }
+        .stat-item {
+            background: var(--surface-glass);
+            backdrop-filter: blur(var(--blur-amount));
+            border-radius: 80px;
+            padding: 0.3rem 1rem;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-glass);
+        }
+
+        .glass-card {
+            background: var(--surface-glass);
+            backdrop-filter: blur(var(--blur-amount));
+            border-radius: 2rem;
+            border: 1px solid var(--border-glass);
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+        }
+        .glass-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+        }
+        .info-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 1.8rem;
+        }
+        .chip {
+            background: var(--bg-secondary);
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border: 1px solid var(--border-glass);
+        }
+        .strict-mode {
+            background: #f97316;
+            color: white;
+            border: none;
+        }
+        body.dark .strict-mode { background: #e85d04; }
+        .feature-list-modern {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+        .feature-list-modern li {
+            margin-bottom: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            font-size: 0.9rem;
+        }
+        .feature-list-modern i {
+            color: var(--accent);
+            width: 1.4rem;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin: 3rem 0 1.8rem 0;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+        }
+        .capability-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+        }
+        .cap-card {
+            background: var(--bg-secondary);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-glass);
+            transition: var(--transition);
+        }
+        .cap-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .tag {
+            background: var(--accent-soft);
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .cta-area {
+            margin-top: 4rem;
+            background: var(--surface-glass);
+            backdrop-filter: blur(var(--blur-amount));
+            border-radius: 2rem;
+            border: 1px solid var(--border-glass);
+            padding: 2.2rem;
+            text-align: center;
+        }
+        .qq-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: var(--bg-secondary);
+            padding: 0.7rem 1.6rem;
+            border-radius: 80px;
+            font-weight: 600;
+            margin-bottom: 1.6rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: var(--transition);
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+        .qq-action i {
+            font-size: 1.4rem;
+            color: #2a9df4;
+        }
+        .qq-action:hover {
+            border-color: var(--accent);
+            transform: scale(1.02);
+            background: var(--accent-soft);
+        }
+        .btn-download {
+            background: var(--accent);
+            border: none;
+            padding: 0.9rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 60px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 5px 12px rgba(0,102,255,0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .btn-download:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+            box-shadow: 0 12px 20px rgba(0,102,255,0.3);
+        }
+
+        .developer-credit {
+            margin-top: 3rem;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            padding: 0.8rem 1.8rem;
+            background: var(--surface-glass);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid var(--border-glass);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+        .kuaishou-badge {
+            background: linear-gradient(145deg, #ff5e00, #d64b00);
+            color: white;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .kuaishou-id {
+            font-family: monospace;
+            background: var(--accent-soft);
+            padding: 0.2rem 0.6rem;
+            border-radius: 40px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .signature-line {
+            width: 40px;
+            height: 2px;
+            background: var(--accent);
+            opacity: 0.4;
+            margin: 0.5rem auto;
+        }
+
+        /* 安全运行计时器样式 */
+        .safe-timer {
+            margin-top: 2rem;
+            text-align: center;
+            background: var(--surface-glass);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 0.6rem 1.2rem;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid var(--border-glass);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .safe-timer i {
+            color: var(--accent);
+            font-size: 1rem;
+        }
+        .timer-digits {
+            font-family: 'JetBrains Mono', 'SF Mono', monospace;
+            font-weight: 700;
+            background: var(--accent-soft);
+            padding: 0.2rem 0.8rem;
+            border-radius: 40px;
+            color: var(--accent);
+        }
+        @media (max-width: 640px) {
+            .safe-timer {
+                font-size: 0.7rem;
+                gap: 0.4rem;
+                padding: 0.4rem 0.8rem;
+            }
+            .timer-digits {
+                font-size: 0.8rem;
+                padding: 0.1rem 0.5rem;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            .hero-left h1 { font-size: 2.6rem; }
+            .hero-desc { max-width: 100%; }
+            .container { padding: 1.2rem 1.2rem 3rem; }
+            .section-title { font-size: 1.4rem; }
+            .cta-area { padding: 1.5rem; }
+            .developer-credit { font-size: 0.75rem; padding: 0.6rem 1rem; gap: 0.4rem; }
+        }
+
+        .toast-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.96);
+            background: var(--bg-secondary);
+            backdrop-filter: blur(20px);
+            border-radius: 1.8rem;
+            padding: 1.8rem 2rem;
+            max-width: 320px;
+            width: 80%;
+            text-align: center;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            box-shadow: 0 30px 40px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-glass);
+        }
+        .toast-modal.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .toast-icon {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin-bottom: 0.8rem;
+        }
+        .toast-message {
+            margin: 0.8rem 0 1.2rem;
+            font-weight: 500;
+        }
+        .toast-close {
+            background: var(--accent);
+            border: none;
+            padding: 0.4rem 1.4rem;
+            border-radius: 60px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .overlay-blur {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.2s;
+        }
+        .overlay-blur.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+<div class="glass-orb orb-1"></div>
+<div class="glass-orb orb-2"></div>
+
+<div class="container">
+    <div class="navbar">
+        <div class="logo"><i class="fas fa-shield-haltered" style="margin-right: 6px;"></i> RootReveal</div>
+        <div class="theme-toggle" id="themeToggle">
+            <i class="fas fa-sun"></i> <span>亮色</span> / <i class="fas fa-moon"></i> <span>暗色</span>
+        </div>
+    </div>
+
+    <div class="hero-grid">
+        <div class="hero-left">
+            <div class="hero-tag">无需 ROOT · 深度检测引擎 v4.0</div>
+            <h1>揭露每一处<br>隐藏的 ROOT 痕迹</h1>
+            <p class="hero-desc">RootReveal — 专为安全而生的环境检测工具，80+ 项无死角扫描，内核级面具、文件越权、挂载点篡改全掌控。</p>
+            <div class="stats-badge">
+                <span class="stat-item"><i class="fas fa-microchip"></i> 80+ 检测项</span>
+                <span class="stat-item"><i class="fas fa-fingerprint"></i> 严格模式</span>
+                <span class="stat-item"><i class="fas fa-mobile-alt"></i> 非高通优化</span>
+            </div>
+        </div>
+        <div class="glass-card">
+            <div class="info-row">
+                <span class="chip"><i class="fas fa-database"></i> 单分区 (无 A/B 槽)</span>
+                <span class="chip"><i class="fas fa-microchip"></i> 非高通芯片 → 跳过 TEE</span>
+                <span class="chip strict-mode"><i class="fas fa-skull"></i> 严格模式已启用</span>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <span class="chip"><i class="fas fa-eye"></i> 显示所有检测项（含正常项）</span>
+            </div>
+            <ul class="feature-list-modern">
+                <li><i class="fas fa-bolt"></i> 内核级面具 (KernelSU / Magisk) 专项</li>
+                <li><i class="fas fa-folder-open"></i> 文件系统越权 & 挂载点劫持</li>
+                <li><i class="fas fa-shield-virus"></i> SELinux / 进程 / 环境变量深度分析</li>
+                <li><i class="fas fa-bug"></i> USB 调试 / 外挂篡改 / 可疑应用</li>
+                <li><i class="fas fa-vr-cardboard"></i> 高通 TEE 节点验证 (非高通自动跳过)</li>
+            </ul>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
+                <i class="fas fa-chart-line"></i> 实时输出正常项 & 异常风险
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">
+        <i class="fas fa-chart-simple" style="color: var(--accent);"></i> 
+        <span>深度检测能力 · 80+ 项扫描矩阵</span>
+    </div>
+    <div class="capability-grid">
+        <div class="cap-card">
+            <h3><i class="fas fa-skull-crosswalk"></i> 隐藏ROOT对抗</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Magisk 隐藏、KernelSU 节点探测、riru 痕迹、挂载命名空间逃逸。</p>
+            <div class="tag-cloud">
+                <span class="tag">Magisk白名单</span>
+                <span class="tag">KernelSU检测</span>
+                <span class="tag">su 路径扫描</span>
+            </div>
+        </div>
+        <div class="cap-card">
+            <h3><i class="fas fa-chart-line"></i> 系统环境审计</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">SELinux 状态、ro.debuggable、ro.secure、可疑属性篡改。</p>
+            <div class="tag-cloud">
+                <span class="tag">属性系统</span>
+                <span class="tag">SELinux</span>
+                <span class="tag">环境变量污染</span>
+            </div>
+        </div>
+        <div class="cap-card">
+            <h3><i class="fas fa-microchip"></i> 硬件/节点验证</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">高通 TEE 完整性、非高通跳过逻辑，挂载点异常识别。</p>
+            <div class="tag-cloud">
+                <span class="tag">TEE节点</span>
+                <span class="tag">分区表检测</span>
+                <span class="tag">OverlayFS</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="cta-area">
+        <div class="qq-action" id="qqGroupBtn">
+            <i class="fab fa-qq"></i> 加入官方 QQ 交流群 · 2158040414
+            <i class="fas fa-arrow-right"></i>
+        </div>
+        <p style="margin-bottom: 1.2rem; font-size: 0.9rem; color: var(--text-secondary);">抢先体验、反馈建议、获取最新测试版本</p>
+        <button class="btn-download" id="downloadBtn">
+            <i class="fas fa-download"></i> 下载 RootReveal v4.0
+        </button>
+        <div style="margin-top: 1rem; font-size: 0.7rem; opacity: 0.6;">内测版本即将开放 · 敬请关注社群动态</div>
+    </div>
+
+    <div class="developer-credit">
+        <span class="kuaishou-badge"><i class="fas fa-video" style="font-size: 0.7rem;"></i> 快手</span>
+        <span>认准开发者</span>
+        <strong style="color: var(--accent);">幻觉.</strong>
+        <span>（接root）</span>
+        <span>快手号：</span>
+        <span class="kuaishou-id">a54752575</span>
+        <span style="opacity:0.6;">| 唯一官方发布渠道</span>
+    </div>
+    <div class="signature-line"></div>
+
+    <!-- 安全运行计时器 -->
+    <div class="safe-timer">
+        <i class="fas fa-shield-alt"></i>
+        <span>本站已安全运行</span>
+        <span class="timer-digits" id="runningTimeDisplay">--天 --时 --分 --秒</span>
+    </div>
+
+    <div style="text-align: center; font-size: 0.65rem; margin-top: 1rem; opacity: 0.5;">
+        RootReveal © 2025 — 纯净·透明·安全
+    </div>
+</div>
+
+<div class="overlay-blur" id="overlay"></div>
+<div class="toast-modal" id="toastMsg">
+    <div class="toast-icon"><i class="fas fa-flask"></i></div>
+    <div class="toast-message">项目内测中，敬请期待！<br>感谢您对此项目的支持！</div>
+    <button class="toast-close" id="closeToast">好的，了解</button>
+</div>
+
+<div class="toast-modal" id="copyToast" style="max-width: 280px;">
+    <div class="toast-icon"><i class="fas fa-copy"></i></div>
+    <div class="toast-message">QQ群号已复制: 2158040414<br>请打开QQ，搜索群号加入</div>
+    <button class="toast-close" id="closeCopyToast">知道了</button>
+</div>
+
+<script>
+    // ========= 计时器核心逻辑（修正：使用UTC+8北京时间） =========
+    // 起始时间：2026年4月6日 21:05:00 北京时间（UTC+8）
+    // 转换为UTC时间戳：UTC时间 2026-04-06 13:05:00
+    const startTimestamp = Date.UTC(2026, 3, 6, 13, 5, 0); // 月份4月 => 3
+    const startDate = new Date(startTimestamp);
+
+    function updateSafeTimer() {
+        const now = new Date();
+        const diffMs = now - startDate;
+        if (diffMs < 0) {
+            document.getElementById('runningTimeDisplay').innerText = '0天 0时 0分 0秒';
+            return;
+        }
+        const totalSeconds = Math.floor(diffMs / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        document.getElementById('runningTimeDisplay').innerText = `${days}天 ${hours}时 ${minutes}分 ${seconds}秒`;
+    }
+    updateSafeTimer();
+    setInterval(updateSafeTimer, 1000);
+    // ========= 计时器逻辑结束 =========
+
+    // 定义 wc 对象和 goQQroup 方法 —— 使用QQ群Key直接跳转加群链接
+    window.wc = window.wc || {};
+    wc.goQQroup = function() {
+        // 使用提供的 key 生成加群链接
+        window.location.href = "https://qun.qq.com/universal-share/share?ac=1&authKey=8BNDE%2FeCcd8kLVP%2Bz7ShfqTxkRD2Hwt%2FbD4W7MpKojwoLe4NLNy0QaXBNasNeNXk&busi_data=eyJncm91cENvZGUiOiIyMTU4MDQwNDE0IiwidG9rZW4iOiJYc2d2NlEvSVFUelJRUG5POHZ0NzNWL1REb3hDcTZBK21INFBTdGlrOG9GcFpqMzVaaCtVaTl4OXFXbi9rT2tEIiwidWluIjoiMTU2Mzk4ODkwNCJ9&data=1sJgwzgpTi4UUokg8vjFgRtnhKk4q_ljAdOAG4I_B-cMQOfi0z1o_vx5ocJXWW0Os9h4LTJSQyLskpesxogCWg&svctype=4&tempid=h5_group_info";
+    };
+
+    // 主题切换
+    const themeToggle = document.getElementById('themeToggle');
+    const htmlBody = document.body;
+    const savedTheme = localStorage.getItem('rootreveal-theme');
+    if (savedTheme === 'dark') {
+        htmlBody.classList.add('dark');
+    } else if (savedTheme === 'light') {
+        htmlBody.classList.remove('dark');
+    } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) htmlBody.classList.add('dark');
+    }
+    themeToggle.addEventListener('click', () => {
+        if (htmlBody.classList.contains('dark')) {
+            htmlBody.classList.remove('dark');
+            localStorage.setItem('rootreveal-theme', 'light');
+        } else {
+            htmlBody.classList.add('dark');
+            localStorage.setItem('rootreveal-theme', 'dark');
+        }
+    });
+
+    // 下载按钮：直接下载 APK 文件（2158040414.apk）
+    const downloadBtn = document.getElementById('downloadBtn');
+    downloadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // 直接指向 APK 文件
+        const apkUrl = './2158040414.apk';
+        const link = document.createElement('a');
+        link.href = apkUrl;
+        link.download = '2158040414.apk';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    // QQ群按钮点击事件
+    const qqGroupBtn = document.getElementById('qqGroupBtn');
+    qqGroupBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (typeof wc !== 'undefined' && wc.goQQroup) {
+            wc.goQQroup();
+        } else {
+            window.location.href = "https://qun.qq.com/universal-share/share?ac=1&authKey=8BNDE%2FeCcd8kLVP%2Bz7ShfqTxkRD2Hwt%2FbD4W7MpKojwoLe4NLNy0QaXBNasNeNXk&busi_data=eyJncm91cENvZGUiOiIyMTU4MDQwNDE0IiwidG9rZW4iOiJYc2d2NlEvSVFUelJRUG5POHZ0NzNWL1REb3hDcTZBK21INFBTdGlrOG9GcFpqMzVaaCtVaTl4OXFXbi9rT2tEIiwidWluIjoiMTU2Mzk4ODkwNCJ9&data=1sJgwzgpTi4UUokg8vjFgRtnhKk4q_ljAdOAG4I_B-cMQOfi0z1o_vx5ocJXWW0Os9h4LTJSQyLskpesxogCWg&svctype=4&tempid=h5_group_info";
+        }
+    });
+
+    // 复制弹窗关闭（保留原有dom以防报错）
+    const copyToast = document.getElementById('copyToast');
+    const closeCopyToast = document.getElementById('closeCopyToast');
+    if (closeCopyToast) {
+        closeCopyToast.addEventListener('click', () => {
+            copyToast.classList.remove('show');
+            overlay.classList.remove('show');
+            document.body.style.overflow = '';
+        });
+    }
+    if (overlay) {
+        overlay.addEventListener('click', () => {
+            if (copyToast && copyToast.classList.contains('show')) {
+                copyToast.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        });
+    }
+
+    // 原有的下载弹窗相关（保留但不再触发）
+    const toast = document.getElementById('toastMsg');
+    const closeToast = document.getElementById('closeToast');
+    function hideDownloadToast() {
+        if (toast) toast.classList.remove('show');
+        if (overlay) overlay.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+    if (closeToast) closeToast.addEventListener('click', hideDownloadToast);
+    if (overlay) overlay.addEventListener('click', hideDownloadToast);
+
+    // 入场动画
+    const animatedItems = document.querySelectorAll('.hero-grid, .capability-grid, .cta-area, .section-title, .developer-credit');
+    animatedItems.forEach((el, idx) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(12px)';
+        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        setTimeout(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, idx * 70);
+    });
+    document.querySelectorAll('.glass-card, .cap-card').forEach(card => {
+        card.style.opacity = '1';
+    });
+</script>
+</body>
+</html>
